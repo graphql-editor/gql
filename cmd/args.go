@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -44,18 +45,14 @@ func NewArgsCommand(config ArgsCommandConfig) *Command {
 			Use:   "args",
 			Short: "Returns field arguments",
 			Long:  `Return all argument names that are defined on this field by GraphQL schema.`,
-			Run: func(cmd *cobra.Command, args []string) {
+			RunE: func(cmd *cobra.Command, args []string) error {
 				f, ok := config.Schema.FieldForPath(args)
 				if !ok {
-					// quick bail, no aproximate matching or anything
-					// either field exists or it does not
-					fmt.Fprintf(config.Error(), "path not found in schema\n") // nolint: errcheck
-					config.Exit(1)
-					// in case of exit function
-					// not actually exiting, return here
-					return
+					// quick bail, no match found
+					return errors.New("path not found in schema\n")
 				}
 				fmt.Fprintln(config.Output(), strings.Join(f.ArgNames(), " ")) // nolint: errcheck
+				return nil
 			},
 		},
 		Config: config.Config,

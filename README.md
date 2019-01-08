@@ -116,4 +116,5 @@ WIP
 * Documentation for subscription and mutation
 * Cache improvements, right now it's just a simple serialized json
 * Completion improvements (right now completion, won't event hint query,mutation and subscription until endpoint path is provided)
-* ZSH completion
+* ~~ZSH completion~~
+* Profiles, typing --endpoint with url each time is annoying
