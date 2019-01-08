@@ -115,6 +115,6 @@ WIP
 * Some serious refactoring on cmd package with goal of embedding the command in custom tools.
 * Documentation for subscription and mutation
 * Cache improvements, right now it's just a simple serialized json
-* Completion improvements (right now completion, won't event hint query,mutation and subscription until endpoint path is provided)
+* ~~Completion improvements (right now completion, won't event hint query,mutation and subscription until endpoint path is provided)~~
 * ~~ZSH completion~~
 * Profiles, typing --endpoint with url each time is annoying

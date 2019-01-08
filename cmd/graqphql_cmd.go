@@ -20,6 +20,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	rootQueryOp     = "query"
+	rootQueryOpDesc = `Simplified query with completion useful for scripting and command line administration.
+
+Executes a query operation on graphql endpoint returning a value of a field if it is a scalar or an enum. If the field returns an object, interface or union type then all scalar and enum fields of that type are returned. If a field returns a list type, the same rules apply to each value in a list.
+
+If field takes arguments user can set them by setting an option AFTER the field that accepts an argument but BEFORE the next field in resolve path.
+
+By default, _ONLY_ top level scalar and enum fields of an object are returned. This is done so that client can be kept relativly simple while dealing with recursive queries. This can be overriden by setting max-depth value to a positive integer value, in which case client will resolve non-scalar fields up to defined depth. Depth is relative to the leaf value of requested path. Be careful since each field is resolved with it's own set of args, so --max-depth option on a field higher in resolve path will not apply to the following fields.
+`
+	rootQueryOpDescShort        = "GraphQL root query operation"
+	rootMutationOp              = "mutation"
+	rootMutationOpDesc          = ``
+	rootMutationOpDescShort     = "GraphQL root mutation operation"
+	rootSubscriptionOp          = "subscription"
+	rootSubscriptionOpDesc      = ``
+	rootSubscriptionOpDescShort = "GraphQL root subscription operation"
+)
+
 var (
 	CacheTimeout time.Duration = -10 * time.Minute
 )
@@ -236,7 +255,10 @@ func (g *GraphQLCommand) RunE(c *cobra.Command, args []string) error {
 	}
 	// just run parent command, as the real implementation
 	// of run is defined by root query
-	return g.FieldCommand.Command.Parent().RunE(c, args)
+	if p := g.FieldCommand.Command.Parent(); p != nil && p.RunE != nil {
+		return p.RunE(c, args)
+	}
+	return nil
 }
 
 func (g *GraphQLCommand) isSimple() bool {
@@ -331,6 +353,13 @@ func NewGraphQLRootCommands(config GraphQLRootConfig) (GraphQLRootCommands, erro
 			return GraphQLRootCommands{}, err
 		}
 	}
+	if config.Endpoint == "" {
+		// Endpoint was not set
+		// be polite and return default suggestions
+		// which are empty query, mutation and subscription
+		// root operations
+		return DefaultRootCommands(), nil
+	}
 	return gqlRoot, nil
 }
 
@@ -413,6 +442,13 @@ func (g *GraphQLRootCommands) newCommandFromRemote() error {
 	if schema, ok := g.loadFromCache(); ok {
 		return g.newCommandFromIntrospection(schema)
 	}
+	if g.Config.Endpoint == "" {
+		// We do not have endpoint set yet
+		// this is not an error yet, since
+		// user may just be trying out completion
+		// for now
+		return nil
+	}
 	cli := client.New(client.Config{
 		Endpoint: g.Config.Endpoint,
 	})
@@ -478,20 +514,13 @@ func (g *GraphQLRootCommands) newCommandFromIntrospection(schema introspection.S
 		g.Query = g.rootCmd(
 			schema,
 			introspection.Field{
-				Type: schema.QueryType,
-				Name: "query",
-				Description: `Simplified query with completion useful for scripting and command line administration.
-
-Executes a query operation on graphql endpoint returning a value of a field if it is a scalar or an enum. If the field returns an object, interface or union type then all scalar and enum fields of that type are returned. If a field returns a list type, the same rules apply to each value in a list.
-
-If field takes arguments user can set them by setting an option AFTER the field that accepts an argument but BEFORE the next field in resolve path.
-
-By default, _ONLY_ top level scalar and enum fields of an object are returned. This is done so that client can be kept relativly simple while dealing with recursive queries. This can be overriden by setting max-depth value to a positive integer value, in which case client will resolve non-scalar fields up to defined depth. Depth is relative to the leaf value of requested path. Be careful since each field is resolved with it's own set of args, so --max-depth option on a field higher in resolve path will not apply to the following fields.
-`,
+				Type:        schema.QueryType,
+				Name:        rootQueryOp,
+				Description: rootQueryOpDesc,
 			},
 			path,
 		)
-		g.Query.FieldCommand.Short = "Quick graphql query operation"
+		g.Query.FieldCommand.Short = rootQueryOpDescShort
 	}
 
 	if schema.MutationType.Name != "" {
@@ -551,4 +580,54 @@ func (g *GraphQLRootCommands) RunE(c *cobra.Command, args []string) error {
 	}
 	execute(cli, r, nil)
 	return nil
+}
+
+func defaultQueryCommand() GraphQLCommand {
+	cmd := NewGraphQLCommand(GraphQLCommandConfig{
+		Field: introspection.Field{
+			Name:        rootQueryOp,
+			Description: rootQueryOpDesc,
+		},
+		Path:         []string{},
+		QueryBuilder: nil,
+		Schema:       introspection.Schema{},
+	})
+	cmd.FieldCommand.Short = rootQueryOpDescShort
+	return cmd
+}
+
+func defaultMutationCommand() GraphQLCommand {
+	cmd := NewGraphQLCommand(GraphQLCommandConfig{
+		Field: introspection.Field{
+			Name:        rootMutationOp,
+			Description: rootMutationOpDesc,
+		},
+		Path:         []string{},
+		QueryBuilder: nil,
+		Schema:       introspection.Schema{},
+	})
+	cmd.FieldCommand.Short = rootMutationOpDescShort
+	return cmd
+}
+
+func defaultSubscriptionCommand() GraphQLCommand {
+	cmd := NewGraphQLCommand(GraphQLCommandConfig{
+		Field: introspection.Field{
+			Name:        rootSubscriptionOp,
+			Description: rootSubscriptionOpDesc,
+		},
+		Path:         []string{},
+		QueryBuilder: nil,
+		Schema:       introspection.Schema{},
+	})
+	cmd.FieldCommand.Short = rootSubscriptionOpDescShort
+	return cmd
+}
+
+func DefaultRootCommands() GraphQLRootCommands {
+	return GraphQLRootCommands{
+		Query:        defaultQueryCommand(),
+		Mutation:     defaultMutationCommand(),
+		Subscription: defaultSubscriptionCommand(),
+	}
 }

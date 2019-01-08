@@ -94,10 +94,10 @@ type IntrospectionCommand struct {
 func (i *IntrospectionCommand) appendDyn(header Header, endpoint *string, cmd *FieldCommand) {
 	if cmd != nil {
 		i.AddCommand(cmd.Command)
-		requiredEndpointFlag(endpoint, cmd.PersistentFlags())
+		requiredEndpointFlag(endpoint, cmd.Flags())
 		formatFlag(cmd.PersistentFlags())
-		noCacheFlag(cmd.PersistentFlags())
-		headersFlag(header, cmd.PersistentFlags())
+		noCacheFlag(cmd.Flags())
+		headersFlag(header, cmd.Flags())
 	}
 }
 
@@ -105,37 +105,34 @@ func NewIntrospectionCommand(config IntrospectionCommandConfig) IntrospectionCom
 	introspectionCmd := IntrospectionCommand{
 		Command: &cobra.Command{
 			Use:   "introspection",
-			Short: "graphql commands depending on schema introspection",
+			Short: "GraphQL that which make use of schema introspection data",
 			Long:  `Root command for commands that require GraphQL schema introspection.`,
 		},
 		Config: config,
 	}
 	endpoint := &introspectionCmd.Config.Endpoint
 	header := introspectionCmd.Config.Header
-	if config.Endpoint != "" {
-		var err error
-		introspectionCmd.GraphQLRootCommands, err = NewGraphQLRootCommands(GraphQLRootConfig{
-			Endpoint: *endpoint,
-			Path:     config.Path,
-			Header:   header,
-		})
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		introspectionCmd.appendDyn(header, endpoint, introspectionCmd.Query.FieldCommand)
-		introspectionCmd.appendDyn(header, endpoint, introspectionCmd.Mutation.FieldCommand)
-		introspectionCmd.appendDyn(header, endpoint, introspectionCmd.Subscription.FieldCommand)
+	var err error
+	introspectionCmd.GraphQLRootCommands, err = NewGraphQLRootCommands(GraphQLRootConfig{
+		Endpoint: *endpoint,
+		Path:     config.Path,
+		Header:   header,
+	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
+	introspectionCmd.appendDyn(header, endpoint, introspectionCmd.Query.FieldCommand)
+	introspectionCmd.appendDyn(header, endpoint, introspectionCmd.Mutation.FieldCommand)
+	introspectionCmd.appendDyn(header, endpoint, introspectionCmd.Subscription.FieldCommand)
 	introspectionCmd.AddCommand(NewFieldsCommand(introspectionCmd.GraphQLRootCommands.Schema))
 	introspectionCmd.AddCommand(NewArgsCommand(
 		ArgsCommandConfig{
 			Schema: introspectionCmd.GraphQLRootCommands.Schema,
 		},
 	).Command)
-	requiredEndpointFlag(endpoint, introspectionCmd.PersistentFlags())
-	formatFlag(introspectionCmd.PersistentFlags())
-	noCacheFlag(introspectionCmd.PersistentFlags())
+	requiredEndpointFlag(endpoint, introspectionCmd.Flags())
+	noCacheFlag(introspectionCmd.Flags())
 	headersFlag(header, introspectionCmd.Flags())
 	return introspectionCmd
 }
