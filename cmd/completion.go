@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -141,8 +142,7 @@ func NewCompletionCommand(config CompletionCommandConfig) *cobra.Command {
     To configure your bash shell to load completions for each session add to your bashrc
 
     # ~/.bashrc or ~/.profile
-    . <(gql completion <bash|zsh>)
-    `,
+    . <(gql completion <bash|zsh>)`,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			if len(args) == 0 {
 				return errors.New("command requires one argument")
@@ -177,10 +177,14 @@ func NewCompletionCommand(config CompletionCommandConfig) *cobra.Command {
 			}
 			completions := getFlagCompletions(cmd)
 			completions = append(completions, getSubcommandCompletions(cmd)...)
+			buf := &bytes.Buffer{}
 			for _, c := range completions {
-				if _, err = fmt.Fprintf(config.Output(), "%s:%s:%s:%t\n", c.cType.String(), c.name, c.description, c.hasArg); err != nil {
+				if _, err = fmt.Fprintf(buf, "%s:%s:%s:%t\n", c.cType.String(), c.name, c.description, c.hasArg); err != nil {
 					return
 				}
+			}
+			if buf.Len() != 0 {
+				_, err = fmt.Fprint(config.Output(), buf.String())
 			}
 			return
 		},
@@ -202,18 +206,17 @@ func getSubcommandCompletions(c *cobra.Command) []completion {
 }
 
 func getFlagCompletions(c *cobra.Command) []completion {
-	flagset := pflag.NewFlagSet(c.Name(), pflag.ExitOnError)
-	flagset.AddFlagSet(c.Flags())
-	flagset.AddFlagSet(c.PersistentFlags())
-	flagset.AddFlagSet(c.InheritedFlags())
 	completions := make([]completion, 0)
-	flagset.VisitAll(func(f *pflag.Flag) {
+	addCompletion := func(f *pflag.Flag) {
 		completions = append(completions, completion{
 			cType:       opt,
 			description: f.Usage,
 			name:        "--" + f.Name,
 			hasArg:      true,
 		})
-	})
+	}
+	c.Flags().VisitAll(addCompletion)
+	c.PersistentFlags().VisitAll(addCompletion)
+	c.InheritedFlags().VisitAll(addCompletion)
 	return completions
 }

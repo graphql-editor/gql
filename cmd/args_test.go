@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"bytes"
-	"runtime/debug"
 	"testing"
+
+	"github.com/aexol/test_util"
 
 	"github.com/stretchr/testify/mock"
 
@@ -13,12 +14,11 @@ import (
 )
 
 type testCaseArgsCommand struct {
-	args         []string
-	field        introspection.Field
-	ok           bool
-	expectedOut  []byte
-	expectedErr  []byte
-	expectedCode int
+	args        []string
+	field       introspection.Field
+	ok          bool
+	expectedOut []byte
+	err         func(*assert.Assertions) test_util.ErrorAssertion
 }
 
 type argsSchemaMock struct {
@@ -31,43 +31,28 @@ func (a *argsSchemaMock) FieldForPath(p []string) (introspection.Field, bool) {
 	ok := call.Bool(1)
 	return f, ok
 }
-
-type fakeout struct{}
-
-func (_ fakeout) Write([]byte) (int, error) {
-	debug.PrintStack()
-	return 0, nil
-}
-
 func (tt testCaseArgsCommand) test(t *testing.T) {
+	if tt.err == nil {
+		tt.err = test_util.NoError
+	}
 	assert := assert.New(t)
 	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	var code int
-	exit := func(c int) {
-		code = c
-	}
 	schema := new(argsSchemaMock)
 	schema.On("FieldForPath", tt.args).Return(tt.field, tt.ok)
-	NewArgsCommand(ArgsCommandConfig{
+	tt.err(assert)(NewArgsCommand(ArgsCommandConfig{
 		Schema: schema,
 		Config: Config{
-			Out:      stdout,
-			Err:      stderr,
-			ExitFunc: exit,
+			Out: stdout,
 		},
-	}).Run(nil, tt.args)
+	}).RunE(nil, tt.args))
 	assert.Equal(tt.expectedOut, stdout.Bytes())
-	assert.Equal(tt.expectedErr, stderr.Bytes())
-	assert.Equal(tt.expectedCode, code)
 }
 
 func TestArgsCommand(t *testing.T) {
 	data := []testCaseArgsCommand{
 		{
-			args:         []string{"a", "b", "c"},
-			expectedErr:  []byte("path not found in schema\n"),
-			expectedCode: 1,
+			args: []string{"a", "b", "c"},
+			err:  test_util.Error,
 		},
 		{
 			args: []string{"a", "b", "c"},
