@@ -18,6 +18,12 @@ It's quite small (~3000 lines) and comes with (almost finished) completion to bo
 
 ![sample](https://user-images.githubusercontent.com/11337563/50778798-1f8dd680-129f-11e9-89a7-7ac9805ca584.gif)
 
+## Requirements
+
+### Build
+
+* Go version 1.11 or higher
+
 ## Installation
 
 For now just install it with
