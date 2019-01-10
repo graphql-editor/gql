@@ -19,13 +19,17 @@ before_script:
 build:
   artifacts:
     expire_in: 1 week
-    paths: binaries
+    paths: 
+      - binaries
   stage: build
+  script:
     - export GOARCH=amd64
     - declare -A extensions=()
     - extensions["windows"]=".exe"
-    - [ "${CI_COMMIT_TAG:-x}" != "x" ] && VER=${CI_COMMIT_TAG}  || VER=${CI_COMMIT_SHORT_SHA}
-    - [ "${CI_COMMIT_TAG:-x}" != "x" ] && TAG=latest || VER=nightly
+    - |
+      [ "${CI_COMMIT_TAG:-x}" != "x" ] && VER=${CI_COMMIT_TAG}  || VER=${CI_COMMIT_SHORT_SHA}
+    - |
+      [ "${CI_COMMIT_TAG:-x}" != "x" ] && TAG=latest || VER=nightly
     - mkdir binaries
     - |
       for os in linux windows darwin; do
