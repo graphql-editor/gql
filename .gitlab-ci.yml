@@ -15,7 +15,7 @@ before_script:
   - mkdir -p .gopath/bin
   - export GOPATH=$(pwd)/.gopath
   - export PATH=$GOPATH/bin:$PATH
-
+  - go get github.com/aktau/github-release
 build:
   artifacts:
     expire_in: 1 week
@@ -41,12 +41,24 @@ test:
     - go test ./...
 
 deploy:
-  image: garland/docker-s3cmd
   stage: deploy
   only:
-    - master
     - tags
-  script: |
-    for f in binaries/*; do
-      s3cmd --access-key ${ACCESS_KEY_ID} --secret ${SECRET_ACCESS_KEY} -P --region ${S3_REGION} --host ${S3_ENDPOINT} cp $f s3://${BUCKET}/$f
-    done
+  script:
+    - |
+      github-release release \
+        --user slothking-online \
+        --repo gql \
+        --tag ${CI_COMMIT_TAG} \
+        --name "Release ${CI_COMMIT_TAG}" \
+        --description "gql automated release" \
+        --pre-release
+    - |
+      for f in binaries/*; do
+        github-release upload \
+          --user slothking-online \
+          --repo gql \
+          --tag ${CI_COMMIT_TAG} \
+          --name "$(echo $f | cut -c 10-)" \
+          --file $f
+      done
