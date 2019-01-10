@@ -1,6 +1,7 @@
 image: golang:latest
 
 stages:
+  - prebuild
   - build
   - test
   - deploy
@@ -15,42 +16,60 @@ before_script:
   - mkdir -p .gopath/bin
   - export GOPATH=$(pwd)/.gopath
   - export PATH=$GOPATH/bin:$PATH
-  - go get github.com/aktau/github-release
-build:
+  - |
+    [ "${CI_COMMIT_TAG:-x}" != "x" ] && VER=${CI_COMMIT_TAG}  || VER=${CI_COMMIT_SHORT_SHA}
+
+.build_job_template: &build_job_definition
+  stage: build
   artifacts:
     expire_in: 1 week
     paths: 
       - binaries
-  stage: build
+
+.os_build_job_template: &os_build_job_definition
+  <<: *build_job_definition
   script:
-    - export GOARCH=amd64
     - declare -A extensions=()
     - extensions["windows"]=".exe"
-    - |
-      [ "${CI_COMMIT_TAG:-x}" != "x" ] && VER=${CI_COMMIT_TAG}  || VER=${CI_COMMIT_SHORT_SHA}
-    - |
-      [ "${CI_COMMIT_TAG:-x}" != "x" ] && TAG=latest || VER=nightly
+    - go build -o gql"${extensions[${GOOS}]}" main.go
+    - tar zcf gql-${GOOS}-${GOARCH}-${VER}.tar.gz gql
     - mkdir binaries
-    - |
-      for os in linux windows darwin; do
-        GOOS=$os go build -o gql"${extensions[${os}]}" main.go
-        tar zcf gql-${os}-${GOARCH}-${VER}.tar.gz gql
-        tar zcf gql-${os}-${GOARCH}-${TAG}.tar.gz gql
-      done
-    - mv gql-*.tar.gz binaries
+    - mv gql-${GOOS}-${GOARCH}-${VER}.tar.gz binaries
+
+prebuild:
+  stage: prebuild
+  script: 
+    - go mod download
+
+build:linux:amd64:
+  variables:
+    GOOS: linux
+    GOARCH: amd64
+  <<: *os_build_job_definition
+
+build:darwin:amd64:
+  variables:
+    GOOS: darwin
+    GOARCH: amd64
+  <<: *os_build_job_definition
+
+build:windows:amd64:
+  variables:
+    GOOS: windowns
+    GOARCH: amd64
+  <<: *os_build_job_definition
 
 test:
-  stage: build
+  stage: test
   script:
     - go test ./...
 
 deploy:
   stage: deploy
-  dependencies:
-    - build
   only:
     - tags
   script:
+    - go get github.com/aktau/github-release
     - |
       github-release release \
         --user slothking-online \
