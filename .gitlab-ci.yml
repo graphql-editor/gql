@@ -46,6 +46,8 @@ test:
 
 deploy:
   stage: deploy
+  dependencies:
+    - build
   only:
     - tags
   script:
