@@ -4,63 +4,58 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
 	"text/template"
 
 	"github.com/slothking-online/gql/client"
 )
 
-func formattedOutput(b []byte) bool {
-	// Try to gracefully format output
-	// in case of an error be polite,
-	// write out an error to stderr
-	// but still return the result of
-	// query
+func formattedOutput(config Config, b []byte) (bool, error) {
+	// Try to gracefully format output of
+	// the query
 	if format == "" {
-		return false
+		return false, nil
 	}
 	t := template.New("format")
 	if _, err := t.Parse(format); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return false
+		return false, err
 	}
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(b, &m); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return false
+		return false, err
 	}
 	buf := &bytes.Buffer{}
 	if err := t.Execute(buf, m); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return false
+		return false, err
 	}
-	fmt.Println(buf.String())
-	return true
+	_, err := fmt.Fprintln(config.Output(), buf.String())
+	return err == nil, err
 }
 
-func execute(cli *client.Client, r client.Raw, out interface{}) {
-	data, err := cli.Raw(r, out)
-	if err != nil {
-		if _, ok := err.(client.Errors); !ok {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+func execute(config Config, cli *client.Client, r client.Raw, out interface{}) error {
+	data, qerr := cli.Raw(r, out)
+	if qerr != nil {
+		if _, ok := qerr.(client.Errors); !ok {
+			return qerr
 		}
 	}
 	if data != nil {
 		b, err := json.MarshalIndent(data, "", "    ")
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
-		if !formattedOutput(b) {
-			fmt.Println(string(b))
+		if ok, err := formattedOutput(config, b); !ok {
+			if _, perr := fmt.Fprintln(config.Output(), string(b)); perr != nil {
+				return perr
+			}
+			return err
 		}
 	}
-	if err != nil {
-		b, merr := json.MarshalIndent(err, "", "    ")
+	if qerr != nil {
+		b, merr := json.MarshalIndent(qerr, "", "    ")
 		if merr != nil {
-			log.Panic(merr)
+			return merr
 		}
-		fmt.Fprintln(os.Stderr, string(b))
+		fmt.Fprintln(config.Error(), string(b))
 	}
+	return nil
 }

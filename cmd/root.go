@@ -62,7 +62,7 @@ func NewRootCommand(args []string) *cobra.Command {
 	},
 	)
 	rootCmd.AddCommand(introspectionCmd.Command)
-	rootCmd.AddCommand(NewRawCommand())
+	rootCmd.AddCommand(NewRawCommand(RawCommandConfig{}))
 	rootCmd.AddCommand(NewCompletionCommand(CompletionCommandConfig{}))
 	aliasFieldCommand(rootCmd, introspectionCmd.Query.FieldCommand)
 	aliasFieldCommand(rootCmd, introspectionCmd.Mutation.FieldCommand)

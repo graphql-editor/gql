@@ -23,8 +23,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type RawCommandConfig struct {
+	Config
+}
+
 // rawCmd represents the raw command
-func NewRawCommand() *cobra.Command {
+func NewRawCommand(config RawCommandConfig) *cobra.Command {
 	var Endpoint string
 	header := make(Header)
 	rawCmd := &cobra.Command{
@@ -50,7 +54,7 @@ Takes exactly one argument, which is graphql query string.`,
 			cli := client.New(client.Config{
 				Endpoint: Endpoint,
 			})
-			execute(cli, r, nil)
+			execute(config.Config, cli, r, nil)
 		},
 	}
 	requiredEndpointFlag(&Endpoint, rawCmd.Flags())

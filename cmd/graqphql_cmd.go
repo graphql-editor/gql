@@ -178,6 +178,7 @@ func (f *FieldCommand) BuildQuery() string {
 }
 
 type GraphQLCommandConfig struct {
+	Config
 	// requied: name of the field this command resolves
 	Field introspection.Field
 	// required: query builder
@@ -469,6 +470,7 @@ func (g *GraphQLRootCommands) newCommandFromRemote() error {
 
 // all commands on graphql start here
 type GraphQLRootConfig struct {
+	Config
 	// required: remote graphql endpoint
 	Endpoint string
 	// any additional headers that should
@@ -578,7 +580,7 @@ func (g *GraphQLRootCommands) RunE(c *cobra.Command, args []string) error {
 		Variables: g.QueryBuilder.Variables(),
 		Header:    httpHeader,
 	}
-	execute(cli, r, nil)
+	execute(g.Config.Config, cli, r, nil)
 	return nil
 }
 
