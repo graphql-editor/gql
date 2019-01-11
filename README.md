@@ -6,13 +6,13 @@ Without going too much into details, I was lately working on some integration of
 
 Now, I love curl as much as a next guy, it is my first `goto` tool when I need to do some debugging with anything related to REST/GraphQL/HTTP(S) in general but stil, writing
 ```sh
-$ curl -g -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Content-Type: application/json" https://api.github.com/graphql -d '{"query": "query {viewer {issues(first: 1) {nodes{title}}}}"}
+$ curl -X POST -g -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Content-Type: application/json" https://api.github.com/graphql -d '{"query": "query {viewer {issues(first: 1) {nodes{title}}}}"}
 ```
-is a bit of a mouthful. Especially those brackets, I actually made a typo with backets while writing this example :)
+is a bit of a mouthful. Especially those brackets, I actually made a typo with backets while writing this example.
 
-So my first though was, well I'll just write a simple CLI for that project, but then it kind of hit me that with GraphQL and it's introspection, you can quite easily make an "one shoe fits all" kind of tool. And that's what this project tries to be.
+So my first though was, well I'll just write a simple CLI for that project, but with GraphQL and it's introspection, you can quite easily make an "one shoe fits all" kind of tool. And that's what this project tries to be.
 
-Now, this project is very much WIP. Any and all contributions are welcome as long as a person contributing remembers one thing, the aim of this tool is not to be a robust and flexible GraphQL client that creats specialized and optimized GraphQL queries. Nor is it a tool meant to help with writing/deployment/whatnot of GraphQL schema for project. It's goal is to make a simple and convenient CLI for most schemas that already exist somewhere upstream. It's meant to be used mostly while scripting and debugging. So usage>performance.
+Now, this project is very much WIP. Any and all contributions are welcome as long as a contributor remembers one thing, the aim of this tool is not to be a robust and flexible GraphQL client that creats specialized and optimized GraphQL queries. Nor is it a tool meant to help with writing/deployment/whatnot of GraphQL schema for project. It's goal is to make a simple and convenient CLI for most schemas that already exist somewhere upstream. It's meant to be used mostly while scripting and debugging. So usage>performance.
 
 It's quite small (~3000 lines) and comes with (almost finished) completion to boot.
 
@@ -26,9 +26,22 @@ It's quite small (~3000 lines) and comes with (almost finished) completion to bo
 
 ## Installation
 
-For now just install it with
+### Latest release
+
+```sh
+$ sudo curl https://raw.githubusercontent.com/slothking-online/gql/master/getgql | sudo sh
+```
+
+### From source
+
 ```
 go get -u github.com/slothking-online/gql
+```
+
+### Without root
+
+```sh
+$ curl https://raw.githubusercontent.com/slothking-online/gql/master/getgql | PREFIX=$HOME/bin sh
 ```
 
 ## License
