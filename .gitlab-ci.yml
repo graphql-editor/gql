@@ -32,7 +32,7 @@ before_script:
     - declare -A extensions=()
     - extensions["windows"]=".exe"
     - go build -o gql"${extensions[${GOOS}]}" main.go
-    - tar zcf gql-${GOOS}-${GOARCH}-${VER}.tar.gz gql
+    - tar zcf gql-${GOOS}-${GOARCH}-${VER}.tar.gz gql"${extensions[${GOOS}]}"
     - mkdir binaries
     - mv gql-${GOOS}-${GOARCH}-${VER}.tar.gz binaries
 
