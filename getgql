@@ -14,7 +14,7 @@ get_shell() {
 }
 
 SHELL="$(get_shell)"
-VERSION="${VERSION:-v0.1.0}"
+VERSION="${VERSION:-v0.1.1}"
 if [ "${COMPLETION:-x}" = x ]; then
     COMPLETION="$([ "${SHELL}" != "unsupported" ] && echo yes || echo no)"
 fi
