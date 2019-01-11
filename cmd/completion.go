@@ -76,11 +76,13 @@ _gql_completions() {
 
 complete -F _gql_completions gql`
 	zshCompletion = `clean() {
+    # Use -E for ERE as it's supported in both
+    # FreeBSD sed and GNU sed
 	echo "${1}" | \
 		cut -c 5- | \
 		sed 's/:true$//' | \
-		sed 's/:false$//' | \
-		sed -r 's/^([^:]*):(.*)/\1\\:"\2"/g' | \
+        sed 's/:false$//' | \
+		sed -E 's/^([^:]*):(.*)/\1\\:"\2"/g' | \
 		tr "\n" " " | sed -e 's/^[ \t]*//;s/[ \t]*$//'
 }
 _gql_parse_fields() {
