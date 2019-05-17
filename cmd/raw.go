@@ -41,12 +41,12 @@ Takes exactly one argument, which is graphql query string.`,
 			if len(args) != 1 {
 				log.Panicln("command takes exactly one argument")
 			}
-			var httpHeader http.Header
+			httpHeader := make(http.Header)
 			for k, v := range header {
 				httpHeader.Add(k, v)
 			}
 			r := client.Raw{
-				Query:         args[1],
+				Query:         args[0],
 				Variables:     map[string]interface{}(variables),
 				OperationName: operationName,
 				Header:        httpHeader,
