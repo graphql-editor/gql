@@ -47,7 +47,9 @@ func execute(config Config, cli *client.Client, r client.Raw, out interface{}) e
 			if _, perr := fmt.Fprintln(config.Output(), string(b)); perr != nil {
 				return perr
 			}
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if qerr != nil {
